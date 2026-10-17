@@ -3,6 +3,7 @@ package com.example.course_management.controller;
 import com.example.course_management.dto.ApiResponse;
 import com.example.course_management.dto.CourseCreateRequest;
 import com.example.course_management.dto.CourseResponse;
+import com.example.course_management.dto.CourseResponseV2;
 import com.example.course_management.dto.PageResponse;
 import com.example.course_management.model.CourseStatus;
 import com.example.course_management.service.CourseService;
@@ -32,7 +33,7 @@ public class CourseController {
         return ResponseEntity.ok(new ApiResponse<>("Course Updated Successfully", true, null));
     }
 
-    // Endpoint lấy danh sách khóa học phân trang và lọc theo trạng thái
+    // V1: Endpoint lấy danh sách khóa học (Cách cũ)
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<CourseResponse>>> getAllCourses(
             @RequestParam(defaultValue = "0") int page,
@@ -41,12 +42,25 @@ public class CourseController {
             @RequestParam(defaultValue = "DESC") Sort.Direction direction,
             @RequestParam(defaultValue = "ACTIVE") CourseStatus status) {
 
-        // Gọi hàm mới từ Service có truyền thêm biến status
         PageResponse<CourseResponse> resultPage = courseService.getPagedCoursesByStatus(page, size, sortBy, direction, status);
 
-        // Bọc kết quả vào ApiResponse chuẩn
         ApiResponse<PageResponse<CourseResponse>> response = new ApiResponse<>("Ok", true, resultPage);
+        return ResponseEntity.ok(response);
+    }
 
+    // V2: Endpoint lấy danh sách khóa học (Đã tối ưu DTO Projection)
+    @GetMapping("/v2")
+    public ResponseEntity<ApiResponse<PageResponse<CourseResponseV2>>> getAllCoursesV2(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(defaultValue = "DESC") Sort.Direction direction,
+            @RequestParam(defaultValue = "ACTIVE") CourseStatus status) {
+
+        // Gọi hàm V2 từ Service
+        PageResponse<CourseResponseV2> resultPage = courseService.getPagedCoursesByStatusV2(page, size, sortBy, direction, status);
+
+        ApiResponse<PageResponse<CourseResponseV2>> response = new ApiResponse<>("Ok", true, resultPage);
         return ResponseEntity.ok(response);
     }
 }
