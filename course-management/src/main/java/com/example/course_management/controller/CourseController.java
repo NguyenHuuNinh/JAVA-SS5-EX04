@@ -4,6 +4,7 @@ import com.example.course_management.dto.ApiResponse;
 import com.example.course_management.dto.CourseCreateRequest;
 import com.example.course_management.dto.CourseResponse;
 import com.example.course_management.dto.PageResponse;
+import com.example.course_management.model.CourseStatus;
 import com.example.course_management.service.CourseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
@@ -31,16 +32,17 @@ public class CourseController {
         return ResponseEntity.ok(new ApiResponse<>("Course Updated Successfully", true, null));
     }
 
-    // Endpoint lấy danh sách khóa học có phân trang (đã chuẩn hóa JSON với PageResponse)
+    // Endpoint lấy danh sách khóa học phân trang và lọc theo trạng thái
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<CourseResponse>>> getAllCourses(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String sortBy,
-            @RequestParam(defaultValue = "DESC") Sort.Direction direction) {
+            @RequestParam(defaultValue = "DESC") Sort.Direction direction,
+            @RequestParam(defaultValue = "ACTIVE") CourseStatus status) {
 
-        // Gọi hàm từ Service, nhận về PageResponse
-        PageResponse<CourseResponse> resultPage = courseService.getPagedCourses(page, size, sortBy, direction);
+        // Gọi hàm mới từ Service có truyền thêm biến status
+        PageResponse<CourseResponse> resultPage = courseService.getPagedCoursesByStatus(page, size, sortBy, direction, status);
 
         // Bọc kết quả vào ApiResponse chuẩn
         ApiResponse<PageResponse<CourseResponse>> response = new ApiResponse<>("Ok", true, resultPage);

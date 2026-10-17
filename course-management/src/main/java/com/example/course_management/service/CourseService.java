@@ -4,6 +4,7 @@ import com.example.course_management.dto.CourseCreateRequest;
 import com.example.course_management.dto.CourseResponse;
 import com.example.course_management.dto.PageResponse;
 import com.example.course_management.model.Course;
+import com.example.course_management.model.CourseStatus;
 import com.example.course_management.model.Instructor;
 import com.example.course_management.repository.CourseRepository;
 import com.example.course_management.repository.InstructorRepository;
@@ -46,12 +47,11 @@ public class CourseService {
         return courseRepository.save(course);
     }
 
-    // Hàm phân trang đã chuẩn hóa sang PageResponse
+    // Hàm phân trang cũ (Không lọc theo status)
     public PageResponse<CourseResponse> getPagedCourses(int page, int size, String sortBy, Sort.Direction direction) {
         if (page < 0) {
             page = 0;
         }
-
         if (sortBy == null || sortBy.trim().isEmpty()) {
             sortBy = "id";
         }
@@ -59,10 +59,8 @@ public class CourseService {
         Sort sort = Sort.by(direction, sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        // Lấy dữ liệu từ database (vẫn là Page của Spring)
         Page<Course> coursePage = courseRepository.findAll(pageable);
 
-        // Chuyển đổi List<Course> sang List<CourseResponse>
         List<CourseResponse> courseResponses = coursePage.getContent().stream()
                 .map(course -> new CourseResponse(
                         course.getId(),
@@ -71,7 +69,43 @@ public class CourseService {
                         course.getInstructor() != null ? course.getInstructor().getId() : null
                 )).toList();
 
-        // Bọc dữ liệu vào PageResponse tự định nghĩa
+        return new PageResponse<>(
+                courseResponses,
+                coursePage.getNumber(),
+                coursePage.getSize(),
+                coursePage.getTotalElements(),
+                coursePage.getTotalPages(),
+                coursePage.isLast()
+        );
+    }
+
+    // Hàm phân trang MỚI (Có điều kiện lọc theo CourseStatus)
+    public PageResponse<CourseResponse> getPagedCoursesByStatus(
+            int page, int size, String sortBy, Sort.Direction direction, CourseStatus status) {
+
+        if (page < 0) {
+            page = 0;
+        }
+        if (sortBy == null || sortBy.trim().isEmpty()) {
+            sortBy = "id";
+        }
+
+        Sort sort = Sort.by(direction, sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        // Gọi hàm tuỳ chỉnh bằng @Query từ Repository
+        Page<Course> coursePage = courseRepository.findAllByStatus(status, pageable);
+
+        // Map Entity sang DTO
+        List<CourseResponse> courseResponses = coursePage.getContent().stream()
+                .map(course -> new CourseResponse(
+                        course.getId(),
+                        course.getTitle(),
+                        course.getStatus(),
+                        course.getInstructor() != null ? course.getInstructor().getId() : null
+                )).toList();
+
+        // Bọc vào PageResponse
         return new PageResponse<>(
                 courseResponses,
                 coursePage.getNumber(),
